@@ -1,0 +1,75 @@
+# 🏛️ Philatelic Archivist
+
+Philatelic Archivist is an advanced, multi-agent AI system built on the Google Agent Development Kit (ADK) 2.0. It automatically evaluates, classifies, and synthesizes historical narratives for rare philatelic items (postage stamps, cancellations, and First Day Covers) using a robust LLM-driven graph workflow and a hybrid deterministic local database.
+
+---
+
+## 🏗️ Architecture Diagram
+
+The backend workflow is modeled as a stateful graph powered by the Google ADK 2.0. The graph routes incoming archival requests through a strict sequence of validation, extraction, database querying, and final synthesis.
+
+```mermaid
+graph TD
+    A[User Input] --> B[Input Guardrail Node]
+    B -- Rejects Financial/Valuation queries --> Z[Rejected]
+    B -- Approves Archival Queries --> C[Visual OCR Node]
+    C --> D[Chronological Context Node]
+    D -- Executes Tool: query_historical_database --> E[Local JSON Database]
+    E -. Returns Milestone Data .-> D
+    D --> F[Archival Synthesis Node]
+    F --> G[Structured Philatelic Schema & Historical Story Map]
+```
+
+## ✨ Engineering Highlights
+
+Throughout the development of this capstone project, several complex engineering challenges were resolved to ensure enterprise-grade stability and free-tier compatibility:
+
+### 1. Handling NDJSON Stream Fragmentation
+When streaming real-time thought processes from the ADK backend to the frontend, large JSON objects were occasionally chunked mid-stream by FastAPI, leading to fragmented `JSON.parse()` errors on the client side. 
+**Solution:** We engineered a robust chunk buffering system in `frontend/index.html` that concatenates incoming byte streams and safely extracts completely formed NDJSON boundaries before attempting to parse, guaranteeing flawless live-rendering of the Agent's internal cognition.
+
+### 2. Defensive Token & Quota Management
+Evaluating complex multi-agent graphs locally can rapidly drain the Gemini Free Tier burst rate limits (RPM), resulting in persistent `429 RESOURCE_EXHAUSTED` errors during automated `agents-cli eval` executions.
+**Solution:** 
+- We developed a custom evaluation runner (`tests/eval/run_local_eval.py`) that strictly bypasses GCP ADC assumptions and injects deterministic sleep-delays between test cases to allow burst-quota buckets to refill. 
+- We dynamically downgraded internal graph nodes from standard experimental endpoints to high-quota lite variants (e.g., `gemini-3.1-flash-lite`) to guarantee maximum uptime across extensive evaluation suites.
+
+---
+
+## 🚀 Step-by-Step Reproduction
+
+Follow these steps to deploy and run the Philatelic Archivist locally.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/philatelic-archivist.git
+cd philatelic-archivist
+```
+
+### 2. Environment Setup
+Create a `.env` file in the root directory and add your Google Gemini API key:
+```env
+GEMINI_API_KEY="your-api-key-here"
+```
+
+### 3. Install Dependencies
+This project uses [uv](https://github.com/astral-sh/uv) for lightning-fast Python dependency management.
+```bash
+uv sync
+```
+
+### 4. Run the Server
+Launch the backend FastAPI server which hosts the ADK 2.0 Workflow:
+```bash
+uv run python app/server.py
+```
+
+### 5. Access the Frontend
+Open `frontend/index.html` directly in any modern web browser. 
+Type an archival request (e.g., *"Analyze the 1950 First Day Cover commemorating the Republic of India with a faint cancellation mark from Calcutta GPO dated 26 Jan 1950"*) and watch the Archival Passport synthesize the historical registry live!
+
+### 6. Run the Evaluation Suite (Optional)
+To verify the structural integrity of the graph and test the guardrail limits without hitting API rate limits, run the custom local evaluation script:
+```bash
+uv run python tests/eval/run_local_eval.py
+```

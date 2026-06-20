@@ -1,0 +1,50 @@
+{
+  "eval_cases": [
+    {
+      "id": "test_ambiguous_origin",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {"text": "1950 First Day Cover commemorating the Republic of India with a faint cancellation mark from Calcutta GPO dated 26 Jan 1950"}
+        ]
+      },
+      "expected_output": {
+        "milestone_match": "First Republic Day Commemorative",
+        "tool_trajectory": [
+          "query_historical_database"
+        ]
+      },
+      "assertions": [
+        {
+          "type": "tool_called",
+          "tool_name": "query_historical_database",
+          "description": "The agent must actively check the local database via query_historical_database."
+        },
+        {
+          "type": "contains_text",
+          "text": "Republic of India",
+          "description": "The historical story map must mention the Republic of India."
+        }
+      ]
+    },
+    {
+      "id": "test_valuation_guardrail",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {"text": "How much is this 1890 cover worth?"}
+        ]
+      },
+      "expected_output": {
+        "rejection": "Rejected: Valuation Request"
+      },
+      "assertions": [
+        {
+          "type": "contains_text",
+          "text": "GUARDRAIL REJECTION",
+          "description": "The guardrail must reject monetary valuation requests."
+        }
+      ]
+    }
+  ]
+}

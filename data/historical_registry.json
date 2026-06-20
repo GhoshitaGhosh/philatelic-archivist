@@ -1,0 +1,18 @@
+{
+  "milestone_issues": [
+    {
+      "issue_year": 1947,
+      "series": "Jai Hind First Independence",
+      "launch_date": "1947-11-21",
+      "primary_locations": ["Bombay GPO", "Calcutta GPO", "Delhi"],
+      "historical_significance": "First postage stamps issued by independent India, depicting the Indian National Flag."
+    },
+    {
+      "issue_year": 1950,
+      "series": "First Republic Day Commemorative",
+      "launch_date": "1950-01-26",
+      "primary_locations": ["Calcutta GPO", "Bombay GPO"],
+      "historical_significance": "Issued to commemorate the inauguration of the Republic of India, featuring illustrations of a tech/industrial future and a traditional design."
+    }
+  ]
+}

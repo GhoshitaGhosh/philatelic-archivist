@@ -1,0 +1,9 @@
+{
+  "datasets": [
+    "evalsets/philatelic.evalset.json"
+  ],
+  "metrics": [
+    "tool_trajectory_score",
+    "response_match_score"
+  ]
+}
