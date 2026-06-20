@@ -34,8 +34,9 @@ Evaluating complex multi-agent graphs locally can rapidly drain the Gemini Free 
 - We developed a custom evaluation runner (`tests/eval/run_local_eval.py`) that strictly bypasses GCP ADC assumptions and injects deterministic sleep-delays between test cases to allow burst-quota buckets to refill. 
 - We dynamically downgraded internal graph nodes from standard experimental endpoints to high-quota lite variants (e.g., `gemini-3.1-flash-lite`) to guarantee maximum uptime across extensive evaluation suites.
 
-### 3. Native Multimodal Vision
-Unlike typical text-only chatbots, this project leverages Gemini's native multimodality to process raw image data. The frontend UI seamlessly encodes user-uploaded artifacts (like vintage stamps) into Base64 streams, routing them securely through FastAPI into the ADK graph. The `visual_ocr_node` physically "sees" the artifact to extract faint cachet watermarks and postmark dates without relying on external OCR libraries.
+### 3. Native Multimodal Vision & Streaming Integrity
+Unlike typical text-only chatbots, this project leverages Gemini's native multimodality to process raw image data. The frontend UI seamlessly encodes user-uploaded artifacts (like vintage stamps) into Base64 streams, routing them securely through FastAPI into the ADK graph. The `visual_ocr_node` physically "sees" the artifact to extract faint cachet watermarks and postmark dates without relying on external OCR libraries. 
+*Note: To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization, preventing `TypeError` crashes while still allowing the LLM to process the images natively.*
 
 ---
 
@@ -50,9 +51,20 @@ cd philatelic-archivist
 ```
 
 ### 2. Environment Setup
+
+**Option A: Gemini Developer API Key (Default)**
 Create a `.env` file in the root directory and add your Google Gemini API key:
 ```env
 GEMINI_API_KEY="your-api-key-here"
+```
+
+**Option B: Google Cloud Project (Vertex AI)**
+If you are deploying in an enterprise environment or prefer using Google Cloud Vertex AI, you can bypass the API key by providing your Google Cloud Project details and using Application Default Credentials (ADC).
+1. Authenticate your local machine: `gcloud auth application-default login`
+2. Configure your `.env` file:
+```env
+GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
+GOOGLE_CLOUD_LOCATION="us-central1"
 ```
 
 ### 3. Install Dependencies
