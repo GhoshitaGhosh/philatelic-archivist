@@ -7,8 +7,11 @@ def input_guardrail_node(node_input) -> Event:
     Input Guardrail Node: Validates input to ensure safety and compliance.
     """
     # node_input from START could be types.Content if no schema is specified.
+    text_input = ""
     if isinstance(node_input, types.Content):
-        text_input = node_input.parts[0].text if node_input.parts else ""
+        for part in node_input.parts:
+            if getattr(part, "text", None):
+                text_input += part.text + " "
     else:
         text_input = str(node_input)
         
@@ -30,9 +33,9 @@ def input_guardrail_node(node_input) -> Event:
     if years:
         heritage_flag = True
         
-    # Pass along the input and the heritage flag in the state
+    # Pass along the ORIGINAL input (preserving the image!) and the heritage flag in the state
     return Event(
-        output=text_input,
+        output=node_input,
         route="passed",
         state={"heritage_flag": heritage_flag}
     )
