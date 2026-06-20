@@ -163,9 +163,17 @@
                                 if (displayContent.trim().startsWith('{')) {
                                     try {
                                         let parsed = JSON.parse(displayContent.trim());
-                                        // Hide the final output from the stream since it goes to the Passport
+                                        // If it's the final schema, populate the passport!
                                         if (parsed.philatelic_data) {
-                                            displayContent = "";
+                                            stream.innerHTML += `<div class="text-emerald-400 mt-4 font-bold flex items-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Workflow Complete.</div>`;
+                                            updatePassport(
+                                                `ARCH-${Math.floor(Math.random()*10000)}`,
+                                                heritageFlag,
+                                                parsed.philatelic_data,
+                                                parsed.historical_story_map
+                                            );
+                                            resetBtn();
+                                            return;
                                         } else {
                                             // Format intermediate JSON nicely
                                             displayContent = `<pre class="text-xs text-amber-200 bg-slate-900/50 p-3 rounded mt-2 overflow-x-auto border border-amber-900/30">${JSON.stringify(parsed, null, 2)}</pre>`;
@@ -177,7 +185,7 @@
                                 }
                             }
                             
-                            // Final Output Schema 
+                            // (Fallback) Final Output Schema if ADK eventually populates event.output
                             if (data.output && data.output.philatelic_data) {
                                 stream.innerHTML += `<div class="text-emerald-400 mt-4 font-bold flex items-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Workflow Complete.</div>`;
                                 updatePassport(
