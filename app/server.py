@@ -73,6 +73,17 @@ async def archive_endpoint(request: Request):
             if hasattr(output_data, "model_dump"):
                 output_data = output_data.model_dump()
                 
+            def sanitize(obj):
+                if isinstance(obj, bytes):
+                    return "<bytes>"
+                if isinstance(obj, dict):
+                    return {k: sanitize(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [sanitize(i) for i in obj]
+                return obj
+                
+            output_data = sanitize(output_data)
+                
             content_text = ""
             if event.content and event.content.parts:
                 content_text = event.content.parts[0].text
