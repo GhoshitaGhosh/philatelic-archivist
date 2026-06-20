@@ -13,6 +13,27 @@
       "launch_date": "1950-01-26",
       "primary_locations": ["Calcutta GPO", "Bombay GPO"],
       "historical_significance": "Issued to commemorate the inauguration of the Republic of India, featuring illustrations of a tech/industrial future and a traditional design."
+    },
+    {
+      "issue_year": 1953,
+      "series": "Conquest of Mount Everest",
+      "launch_date": "1953-10-02",
+      "primary_locations": ["New Delhi", "Bombay GPO", "Calcutta GPO"],
+      "historical_significance": "Issued to celebrate the historic first successful ascent of Mount Everest by Tenzing Norgay and Edmund Hillary."
+    },
+    {
+      "issue_year": 1911,
+      "series": "First Official Aerial Post",
+      "launch_date": "1911-02-18",
+      "primary_locations": ["Allahabad", "Naini"],
+      "historical_significance": "The world's first official airmail flight, covering 5 miles from Allahabad to Naini across the Yamuna River."
+    },
+    {
+      "issue_year": 1852,
+      "series": "Scinde Dawk (Regional District Post)",
+      "launch_date": "1852-07-01",
+      "primary_locations": ["Sind Province", "Karachi"],
+      "historical_significance": "Asia's first postage stamps, issued strictly as a regional exhibition of postal efficiency in the Sind province before national stamps existed."
     }
   ]
 }
