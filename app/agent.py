@@ -49,7 +49,15 @@ chronological_context_node = LlmAgent(
 
 @node
 def prepare_synthesis(ctx: Context, node_input: dict) -> str:
-    """Gather all state data and prepare the prompt for the synthesis node."""
+    """Gather all state data and prepare the prompt for the synthesis node.
+    
+    Args:
+        ctx: The ADK Context containing global state variables like ocr_results.
+        node_input: The output from the previous chronological context node.
+        
+    Returns:
+        A formatted string prompt bridging the OCR, heritage flag, and milestone data.
+    """
     ocr = ctx.state.get("ocr_results", {})
     heritage = ctx.state.get("heritage_flag", False)
     milestone = node_input
