@@ -36,7 +36,9 @@ Evaluating complex multi-agent graphs locally can rapidly drain the Gemini Free 
 
 ### 3. Native Multimodal Vision & Streaming Integrity
 Unlike typical text-only chatbots, this project leverages Gemini's native multimodality to process raw image data. The frontend UI seamlessly encodes user-uploaded artifacts (like vintage stamps) into Base64 streams, routing them securely through FastAPI into the ADK graph. The `visual_ocr_node` physically "sees" the artifact to extract faint cachet watermarks and postmark dates without relying on external OCR libraries. 
-*Note: To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization, preventing `TypeError` crashes while still allowing the LLM to process the images natively.*
+
+* **Live Model Swapping:** A dynamic frontend selector allows users to instantly pivot between models (e.g., `gemini-3.1-flash-lite`, `gemini-3.5-flash`) at runtime. The FastAPI backend hot-swaps the underlying LLM agents across the entire ADK graph before executing the request.
+* **Streaming Integrity Defense:** To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization. This prevents `TypeError` serialization crashes while still allowing the LLM to process the images natively.
 
 ---
 
