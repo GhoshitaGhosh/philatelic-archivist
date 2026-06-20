@@ -25,13 +25,25 @@
         <!-- Left Column: Input and Stream -->
         <div class="col-span-1 lg:col-span-7 flex flex-col gap-6">
             <div class="glass-panel p-6 rounded-2xl">
-                <h2 class="text-xl font-semibold mb-4 text-amber-400">Analyze Artifact</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-amber-400">Analyze Artifact</h2>
+                    <select id="modelSelector" class="bg-slate-800/80 border border-slate-600 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
+                        <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option>
+                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+                    </select>
+                </div>
                 <textarea id="userInput" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl p-4 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none transition-all placeholder-slate-500" rows="4" placeholder="e.g., 1950 First Day Cover commemorating the Republic of India with a faint cancellation mark from Calcutta GPO dated 26 Jan 1950"></textarea>
                 
                 <div class="mt-4 flex flex-col gap-3 border-t border-slate-700/50 pt-4">
                     <label class="block text-sm font-medium text-slate-400">Attach Artifact Image (Optional)</label>
                     <input type="file" id="imageInput" accept="image/*" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-500/10 file:text-amber-400 hover:file:bg-amber-500/20 transition-all cursor-pointer bg-slate-800/80 border border-slate-600 rounded-xl p-2 focus:outline-none">
-                    <img id="imagePreview" class="hidden mt-2 rounded-xl max-h-48 border border-slate-600 object-contain self-start shadow-lg">
+                    <div id="previewContainer" class="hidden relative mt-2 self-start">
+                        <img id="imagePreview" class="rounded-xl max-h-48 border border-slate-600 object-contain shadow-lg">
+                        <button id="removeImageBtn" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors" title="Remove Image">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex justify-end mt-4">
                     <button id="analyzeBtn" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:shadow-orange-500/20 transition-all transform hover:-translate-y-0.5">
@@ -103,28 +115,33 @@
 
         document.getElementById('imageInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
+            const previewContainer = document.getElementById('previewContainer');
             const preview = document.getElementById('imagePreview');
             if (file) {
                 currentMimeType = file.type;
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     preview.src = evt.target.result;
-                    preview.classList.remove('hidden');
+                    previewContainer.classList.remove('hidden');
                     currentBase64 = evt.target.result.split(',')[1];
                 };
                 reader.readAsDataURL(file);
-            } else {
-                preview.src = "";
-                preview.classList.add('hidden');
-                currentBase64 = null;
-                currentMimeType = null;
             }
+        });
+
+        document.getElementById('removeImageBtn').addEventListener('click', function() {
+            document.getElementById('imageInput').value = '';
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('imagePreview').src = '';
+            currentBase64 = null;
+            currentMimeType = null;
         });
 
         document.getElementById('analyzeBtn').addEventListener('click', async () => {
             const btn = document.getElementById('analyzeBtn');
             const stream = document.getElementById('streamOutput');
             const input = document.getElementById('userInput').value;
+            const model = document.getElementById('modelSelector').value;
             
             if(!input && !currentBase64) return;
 
@@ -133,7 +150,7 @@
             stream.innerHTML = `<div class="text-amber-400">▶ Starting workflow for: "${input.substring(0, 30)}..."</div>`;
             
             try {
-                const payload = { input: input };
+                const payload = { input: input, model: model };
                 if (currentBase64) {
                     payload.image = currentBase64;
                     payload.mime_type = currentMimeType;

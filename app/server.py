@@ -63,6 +63,13 @@ async def archive_endpoint(request: Request):
             
         msg = types.Content(role="user", parts=parts)
         
+        # Dynamically set the model based on user selection
+        model_name = data.get("model", "gemini-3.1-flash-lite")
+        from app.agent import visual_ocr_node, chronological_context_node, archival_synthesis_node
+        visual_ocr_node.model = model_name
+        chronological_context_node.model = model_name
+        archival_synthesis_node.model = model_name
+        
         # Iterate over the graph workflow event stream
         async for event in runner.run_async(
             user_id="local_ui",
