@@ -40,13 +40,28 @@ async def archive_endpoint(request: Request):
     """Endpoint that accepts a philatelic description and streams ADK node events back."""
     data = await request.json()
     user_input = data.get("input", "")
+    image_b64 = data.get("image", None)
+    mime_type = data.get("mime_type", "image/jpeg")
     
     async def event_stream():
         # Create a session for the local dev execution
         session = await runner.session_service.create_session(
             app_name="app", user_id="local_ui"
         )
-        msg = types.Content(role="user", parts=[types.Part.from_text(text=user_input)])
+        
+        parts = []
+        if image_b64:
+            import base64
+            try:
+                image_bytes = base64.b64decode(image_b64)
+                parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+            except Exception as e:
+                print(f"Error decoding image: {e}")
+                
+        if user_input:
+            parts.append(types.Part.from_text(text=user_input))
+            
+        msg = types.Content(role="user", parts=parts)
         
         # Iterate over the graph workflow event stream
         async for event in runner.run_async(
