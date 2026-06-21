@@ -20,6 +20,12 @@ Try the live version of Philatelic Archivist deployed securely on Hugging Face S
 
 *(Note: The demo uses our Bring Your Own Key architecture. You will need your own Gemini API key to interact with the agent, guaranteeing zero quota leakage.)*
 
+**How to get a free API Key:**
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Sign in with your Google account.
+3. Click **Create API Key** to generate a free key instantly.
+4. Paste the key into the Philatelic Archivist demo!
+
 ---
 
 ## 🏗️ Architecture Diagram
