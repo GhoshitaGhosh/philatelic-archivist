@@ -137,8 +137,23 @@ async def archive_endpoint(request: Request):
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 from fastapi.staticfiles import StaticFiles
-# Mount the static frontend so visiting / serves index.html natively
-app.mount("/", StaticFiles(directory=str(pathlib.Path(__file__).parent.parent / "frontend"), html=True), name="frontend")
+import pathlib
+from fastapi.responses import FileResponse, Response
+
+@app.head("/")
+async def head_root():
+    return Response(status_code=200)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+@app.get("/")
+async def get_root():
+    return FileResponse(str(pathlib.Path(__file__).parent.parent / "frontend" / "index.html"))
+
+# Mount remaining static assets (CSS, JS) without intercepting root
+app.mount("/", StaticFiles(directory=str(pathlib.Path(__file__).parent.parent / "frontend"), html=False), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
