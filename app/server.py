@@ -73,60 +73,60 @@ async def archive_endpoint(request: Request):
             app_name="app", user_id="local_ui"
         )
         
-        parts = []
-        if image_b64:
-            import base64
-            try:
-                image_bytes = base64.b64decode(image_b64)
-                parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
-            except Exception as e:
-                print(f"Error decoding image: {e}")
+            parts = []
+            if image_b64:
+                import base64
+                try:
+                    image_bytes = base64.b64decode(image_b64)
+                    parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+                except Exception as e:
+                    print(f"Error decoding image: {e}")
+                    
+            if user_input:
+                parts.append(types.Part.from_text(text=user_input))
                 
-        if user_input:
-            parts.append(types.Part.from_text(text=user_input))
+            msg = types.Content(role="user", parts=parts)
             
-        msg = types.Content(role="user", parts=parts)
-        
-        # Dynamically set the model based on user selection
-        model_name = data.get("model", "gemini-3.1-flash-lite")
-        from app.agent import visual_ocr_node, chronological_context_node, archival_synthesis_node
-        visual_ocr_node.model = model_name
-        chronological_context_node.model = model_name
-        archival_synthesis_node.model = model_name
-        
-        # Iterate over the graph workflow event stream
-        async for event in runner.run_async(
-            user_id="local_ui",
-            session_id=session.id,
-            new_message=msg,
-        ):
-            output_data = event.output
-            if hasattr(output_data, "model_dump"):
-                output_data = output_data.model_dump()
-                
-            def sanitize(obj):
-                if isinstance(obj, bytes):
-                    return "<bytes>"
-                if isinstance(obj, dict):
-                    return {k: sanitize(v) for k, v in obj.items()}
-                if isinstance(obj, list):
-                    return [sanitize(i) for i in obj]
-                return obj
-                
-            output_data = sanitize(output_data)
-                
-            content_text = ""
-            if event.content and event.content.parts:
-                content_text = event.content.parts[0].text
-                
-            payload = {
-                "type": "event",
-                "content": content_text,
-                "output": output_data,
-                "route": getattr(event, "route", None),
-                "state": getattr(event, "state", None)
-            }
-            yield json.dumps(payload) + "\n"
+            # Dynamically set the model based on user selection
+            model_name = data.get("model", "gemini-3.1-flash-lite")
+            from app.agent import visual_ocr_node, chronological_context_node, archival_synthesis_node
+            visual_ocr_node.model = model_name
+            chronological_context_node.model = model_name
+            archival_synthesis_node.model = model_name
+            
+            # Iterate over the graph workflow event stream
+            async for event in runner.run_async(
+                user_id="local_ui",
+                session_id=session.id,
+                new_message=msg,
+            ):
+                output_data = event.output
+                if hasattr(output_data, "model_dump"):
+                    output_data = output_data.model_dump()
+                    
+                def sanitize(obj):
+                    if isinstance(obj, bytes):
+                        return "<bytes>"
+                    if isinstance(obj, dict):
+                        return {k: sanitize(v) for k, v in obj.items()}
+                    if isinstance(obj, list):
+                        return [sanitize(i) for i in obj]
+                    return obj
+                    
+                output_data = sanitize(output_data)
+                    
+                content_text = ""
+                if event.content and event.content.parts:
+                    content_text = event.content.parts[0].text
+                    
+                payload = {
+                    "type": "event",
+                    "content": content_text,
+                    "output": output_data,
+                    "route": getattr(event, "route", None),
+                    "state": getattr(event, "state", None)
+                }
+                yield json.dumps(payload) + "\n"
             
         finally:
             if lock_acquired:
@@ -135,6 +135,10 @@ async def archive_endpoint(request: Request):
                 api_key_lock.release()
 
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+from fastapi.staticfiles import StaticFiles
+# Mount the static frontend so visiting / serves index.html natively
+app.mount("/", StaticFiles(directory=str(pathlib.Path(__file__).parent.parent / "frontend"), html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
