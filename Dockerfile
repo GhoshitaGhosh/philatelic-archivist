@@ -35,4 +35,4 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 EXPOSE 7860
 
 # Run uvicorn directly from the virtual environment (bypasses uv run proxy networking bugs in HF)
-CMD ["/app/.venv/bin/uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["/code/.venv/bin/uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "7860"]
