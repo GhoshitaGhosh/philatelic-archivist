@@ -13,6 +13,15 @@ Philatelic Archivist is an advanced, multi-agent AI system built on the Google A
 
 ---
 
+## 🌐 Live Public Demo
+
+Try the live version of Philatelic Archivist deployed securely on Hugging Face Spaces Docker:
+👉 **[Launch Philatelic Archivist Demo](https://ghoshitaghosh-philatelic-archivist.hf.space/)**
+
+*(Note: The demo uses our Bring Your Own Key architecture. You will need your own Gemini API key to interact with the agent, guaranteeing zero quota leakage.)*
+
+---
+
 ## 🏗️ Architecture Diagram
 
 The backend workflow is modeled as a stateful graph powered by the Google ADK 2.0. The graph routes incoming archival requests through a strict sequence of validation, extraction, database querying, and final synthesis.
