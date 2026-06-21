@@ -97,7 +97,7 @@ uv run python app/server.py
 ```
 
 ### 5. Access the Frontend
-Open `frontend/index.html` directly in any modern web browser. 
+Open `http://localhost:8000/` in any modern web browser. The FastAPI server natively mounts and serves the frontend application. 
 Type an archival request (e.g., *"Analyze the 1950 First Day Cover commemorating the Republic of India with a faint cancellation mark from Calcutta GPO dated 26 Jan 1950"*) and watch the Archival Passport synthesize the historical registry live!
 
 ### 6. Run the Evaluation Suite (Optional)
