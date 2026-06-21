@@ -1,3 +1,11 @@
+---
+title: Philatelic Archivist
+emoji: 🏛️
+colorFrom: gray
+colorTo: blue
+sdk: docker
+pinned: false
+---
 # 🏛️ Philatelic Archivist
 
 Philatelic Archivist is an advanced, multi-agent AI system built on the Google Agent Development Kit (ADK) 2.0. It automatically evaluates, classifies, and synthesizes historical narratives for rare philatelic items (postage stamps, cancellations, and First Day Covers) using a robust LLM-driven graph workflow and a hybrid deterministic local database.
