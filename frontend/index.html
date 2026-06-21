@@ -33,6 +33,14 @@
                         <option value="gemini-3.5-flash">gemini-3.5-flash</option>
                     </select>
                 </div>
+                
+                <!-- BYOK Container -->
+                <div id="byokContainer" class="hidden mb-4 bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
+                    <label class="block text-sm font-semibold text-amber-400 mb-1">Demo Mode: Bring Your Own Key</label>
+                    <p class="text-xs text-slate-400 mb-3">This public demo requires your own Gemini API key to run. <span class="text-emerald-400 font-semibold">Your key is transmitted securely, never logged, and instantly wiped from server memory after execution.</span></p>
+                    <input type="password" id="geminiApiKey" placeholder="AIzaSy..." class="w-full bg-slate-800/80 border border-slate-600 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm">
+                </div>
+
                 <textarea id="userInput" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl p-4 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none transition-all placeholder-slate-500" rows="4" placeholder="e.g., 1950 First Day Cover commemorating the Republic of India with a faint cancellation mark from Calcutta GPO dated 26 Jan 1950"></textarea>
                 
                 <div class="mt-4 flex flex-col gap-3 border-t border-slate-700/50 pt-4">
@@ -112,6 +120,18 @@
     <script>
         let currentBase64 = null;
         let currentMimeType = null;
+        let requiresApiKey = false;
+
+        // Initialize server config
+        fetch('http://localhost:8000/api/config')
+            .then(res => res.json())
+            .then(data => {
+                requiresApiKey = data.requires_key;
+                if(requiresApiKey) {
+                    document.getElementById('byokContainer').classList.remove('hidden');
+                }
+            })
+            .catch(e => console.error("Could not fetch server config:", e));
 
         document.getElementById('imageInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -143,7 +163,15 @@
             const input = document.getElementById('userInput').value;
             const model = document.getElementById('modelSelector').value;
             
+            const apiKeyField = document.getElementById('geminiApiKey');
+            const apiKey = apiKeyField ? apiKeyField.value.trim() : "";
+            
             if(!input && !currentBase64) return;
+            
+            if(requiresApiKey && !apiKey) {
+                alert("Please provide a Gemini API Key to run the public demo.");
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<span class="animate-pulse">Processing...</span>';
@@ -155,9 +183,15 @@
                     payload.image = currentBase64;
                     payload.mime_type = currentMimeType;
                 }
+                
+                const headers = { 'Content-Type': 'application/json' };
+                if (requiresApiKey && apiKey) {
+                    headers['X-Gemini-Key'] = apiKey;
+                }
+
                 const response = await fetch('http://localhost:8000/api/archive', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify(payload)
                 });
                 

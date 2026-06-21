@@ -35,6 +35,17 @@ app.add_middleware(
 # Initialize the ADK InMemoryRunner to wrap the workflow
 runner = InMemoryRunner(app=adk_app)
 
+# Global lock for secure single-tenant BYOK execution
+api_key_lock = asyncio.Lock()
+
+@app.get("/api/config")
+async def get_config():
+    """Checks if the server is already authenticated."""
+    has_key = bool(os.environ.get("GEMINI_API_KEY"))
+    has_gcp = bool(os.environ.get("GOOGLE_CLOUD_PROJECT"))
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"requires_key": not (has_key or has_gcp)})
+
 @app.post("/api/archive")
 async def archive_endpoint(request: Request):
     """Endpoint that accepts a philatelic description and streams ADK node events back."""
@@ -42,10 +53,23 @@ async def archive_endpoint(request: Request):
     user_input = data.get("input", "")
     image_b64 = data.get("image", None)
     mime_type = data.get("mime_type", "image/jpeg")
+    x_gemini_key = request.headers.get("X-Gemini-Key", None)
     
     async def event_stream():
-        # Create a session for the local dev execution
-        session = await runner.session_service.create_session(
+        requires_key = not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_CLOUD_PROJECT"))
+        if requires_key and not x_gemini_key:
+            yield json.dumps({"type": "event", "route": "flagged", "output": "Server requires a Gemini API Key. Please provide it in the UI."}) + "\n"
+            return
+            
+        lock_acquired = False
+        if requires_key and x_gemini_key:
+            await api_key_lock.acquire()
+            lock_acquired = True
+            os.environ["GEMINI_API_KEY"] = x_gemini_key
+            
+        try:
+            # Create a session for the local dev execution
+            session = await runner.session_service.create_session(
             app_name="app", user_id="local_ui"
         )
         
@@ -103,6 +127,12 @@ async def archive_endpoint(request: Request):
                 "state": getattr(event, "state", None)
             }
             yield json.dumps(payload) + "\n"
+            
+        finally:
+            if lock_acquired:
+                # Forcefully wipe the key from memory immediately after execution
+                os.environ.pop("GEMINI_API_KEY", None)
+                api_key_lock.release()
 
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
