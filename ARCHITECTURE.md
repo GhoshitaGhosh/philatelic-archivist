@@ -37,3 +37,10 @@ To support free public deployments (e.g., Hugging Face Spaces) without exposing 
 2. **Header-Only Transmission**: The frontend never places the API key in the JSON payload body. It is transmitted exclusively via a custom `X-Gemini-Key` HTTP header.
 3. **Single-Tenant Memory Isolation**: Inside the FastAPI `/api/archive` endpoint, if a BYOK key is detected, the server acquires a strict `asyncio.Lock()`. This prevents concurrent requests from cross-contaminating keys. The backend temporarily binds the key to `os.environ` specifically for the ADK `InMemoryRunner` execution context.
 4. **Guaranteed Volatility**: Wrapped in an ironclad `finally` block, the server guarantees that the `GEMINI_API_KEY` is explicitly popped from the environment the exact microsecond the event stream concludes, ensuring the key is never logged, leaked, or persisted.
+
+## 5. Unified Docker Deployment
+
+To eliminate the need for cross-origin resource sharing (CORS) complexities in production and ensure frictionless hosting, the application uses a unified monolithic architecture:
+
+1. **Native Static File Serving**: The FastAPI application natively mounts the `/frontend` directory via Starlette's `StaticFiles`. Instead of running two independent servers, the backend serves the glassmorphic HTML/CSS/JS payload directly on the root `GET /` endpoint.
+2. **Containerized Port Binding**: Designed specifically for **Hugging Face Spaces**, the entire application is containerized using a minimal Dockerfile powered by `uv` for lightning-fast environment syncing. The `uvicorn` ASGI server binds aggressively to `0.0.0.0:7860`, intercepting the reverse-proxy ingress traffic from Hugging Face's load balancers without requiring any specialized WSGI configurations.
