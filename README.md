@@ -40,6 +40,10 @@ Unlike typical text-only chatbots, this project leverages Gemini's native multim
 * **Live Model Swapping:** A dynamic frontend selector allows users to instantly pivot between models (e.g., `gemini-3.1-flash-lite`, `gemini-3.5-flash`) at runtime. The FastAPI backend hot-swaps the underlying LLM agents across the entire ADK graph before executing the request.
 * **Streaming Integrity Defense:** To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization. This prevents `TypeError` serialization crashes while still allowing the LLM to process the images natively.
 
+### 4. Bring Your Own Key (BYOK) Architecture for Public Deployments
+To allow for safe public deployments (e.g., on Hugging Face Spaces) without leaking developer API quotas, the frontend features a dynamic configuration probe. If the backend is running without a local `.env` file, the UI dynamically surfaces a secure `<input type="password">` field for visitors to supply their own Gemini API key. 
+**Secure Execution Isolation:** The visitor's key is passed exclusively via a custom HTTP header (`X-Gemini-Key`). The FastAPI backend employs a strict `asyncio.Lock()` to prevent cross-contamination between concurrent users, temporarily injecting the key into the local process and forcefully wiping it via an ironclad `finally` block the precise microsecond the graph execution concludes.
+
 ---
 
 ## 🚀 Step-by-Step Reproduction
@@ -68,6 +72,9 @@ If you are deploying in an enterprise environment or prefer using Google Cloud V
 GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
 GOOGLE_CLOUD_LOCATION="us-central1"
 ```
+
+**Option C: Public Demo Mode (Bring Your Own Key)**
+To deploy safely on public platforms (e.g. Hugging Face Spaces Docker), simply omit the `.env` file entirely. The frontend will dynamically detect the naked server and render a secure input field requiring visitors to supply their own API keys, completely protecting your personal quotas.
 
 ### 3. Install Dependencies
 This project uses [uv](https://github.com/astral-sh/uv) for lightning-fast Python dependency management.
