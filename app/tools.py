@@ -40,19 +40,26 @@ def search_online_archives(query_text: str) -> dict:
     Returns:
         A dictionary containing the top search result snippets.
     """
-    try:
-        results = []
-        with DDGS() as ddgs:
-            for r in ddgs.text(query_text, max_results=3):
-                results.append({
-                    "title": r.get("title", ""),
-                    "snippet": r.get("body", ""),
-                    "url": r.get("href", "")
-                })
-        
-        if not results:
-            return {"result": "No results found on the web."}
+    def _run_search():
+        try:
+            results = []
+            with DDGS() as ddgs:
+                for r in ddgs.text(query_text, max_results=3):
+                    results.append({
+                        "title": r.get("title", ""),
+                        "snippet": r.get("body", ""),
+                        "url": r.get("href", "")
+                    })
             
-        return {"result": "Web search successful", "snippets": results}
-    except Exception as e:
-        return {"error": f"Web search failed: {e}"}
+            if not results:
+                return {"result": "No results found on the web."}
+                
+            return {"result": "Web search successful", "snippets": results}
+        except Exception as e:
+            return {"error": f"Web search failed: {e}"}
+
+    import concurrent.futures
+    # Execute in a pristine thread to prevent DDGS from colliding with FastAPI's active asyncio loop
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_run_search)
+        return future.result()
