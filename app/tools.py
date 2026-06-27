@@ -31,10 +31,10 @@ def query_historical_database(query_text: str) -> dict:
 
 import urllib.request
 import urllib.parse
-import json
+import re
 
 def search_online_archives(query_text: str) -> dict:
-    """Searches Wikipedia for historical stamp information and chronological context.
+    """Searches the public web for historical stamp information using DuckDuckGo.
     
     Args:
         query_text: The search query (e.g., '1950 Republic of India stamp').
@@ -43,24 +43,22 @@ def search_online_archives(query_text: str) -> dict:
         A dictionary containing the top historical search result snippets.
     """
     try:
-        url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + urllib.parse.quote(query_text) + "&utf8=&format=json"
-        req = urllib.request.Request(url, headers={'User-Agent': 'PhilatelicArchivist/1.0 (https://github.com/GhoshitaGhosh/philatelic-archivist)'})
+        url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query_text)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         with urllib.request.urlopen(req, timeout=10) as response:
-            data = json.loads(response.read().decode())
+            html = response.read().decode('utf-8')
             
-        search_hits = data.get("query", {}).get("search", [])
+        snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', html, re.IGNORECASE | re.DOTALL)
+        if not snippets:
+            return {"result": "No results found on the web."}
+            
         results = []
-        for r in search_hits[:3]:
-            snippet = r.get("snippet", "").replace('<span class="searchmatch">', '').replace('</span>', '').replace('&quot;', '"')
-            results.append({
-                "title": r.get("title", ""),
-                "snippet": snippet,
-                "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(r.get('title', ''))}"
-            })
+        for s in snippets[:3]:
+            # Clean HTML tags and decode basic entities
+            clean_s = re.sub(r'<[^>]+>', '', s).strip()
+            clean_s = clean_s.replace('&#39;', "'").replace('&quot;', '"').replace('&amp;', '&')
+            results.append({"snippet": clean_s})
             
-        if not results:
-            return {"result": "No results found on Wikipedia."}
-            
-        return {"result": "Wikipedia search successful", "snippets": results}
+        return {"result": "Web search successful", "snippets": results}
     except Exception as e:
         return {"error": f"Web search failed: {e}"}
