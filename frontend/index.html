@@ -232,6 +232,14 @@
                                 return;
                             }
 
+                            // Server Error handled by try/except block
+                            if (data.route === 'error') {
+                                stream.innerHTML += `<div class="text-red-500 mt-2 font-bold">▶ [Server Error] ${data.content}</div>`;
+                                updatePassport('ERROR', false, {}, 'Analysis failed due to a server error.');
+                                resetBtn();
+                                return;
+                            }
+
                             // Capture state updates
                             if (data.state && data.state.heritage_flag !== undefined) {
                                 heritageFlag = data.state.heritage_flag;
@@ -304,6 +312,8 @@
             let badges = '';
             if (id === 'REJECTED') {
                 badges = '<span class="badge badge-rejected">Rejected</span>';
+            } else if (id === 'ERROR') {
+                badges = '<span class="badge badge-rejected bg-red-900 text-red-100 border-red-500">Error</span>';
             } else {
                 badges = '<span class="badge badge-verified">Verified</span><span class="badge badge-era">Archival Record</span>';
                 if (isHeritage) {

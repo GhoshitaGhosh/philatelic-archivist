@@ -95,38 +95,53 @@ async def archive_endpoint(request: Request):
             archival_synthesis_node.model = model_name
             
             # Iterate over the graph workflow event stream
-            async for event in runner.run_async(
-                user_id="local_ui",
-                session_id=session.id,
-                new_message=msg,
-            ):
-                output_data = event.output
-                if hasattr(output_data, "model_dump"):
-                    output_data = output_data.model_dump()
-                    
-                def sanitize(obj):
-                    if isinstance(obj, bytes):
-                        return "<bytes>"
-                    if isinstance(obj, dict):
-                        return {k: sanitize(v) for k, v in obj.items()}
-                    if isinstance(obj, list):
-                        return [sanitize(i) for i in obj]
-                    return obj
-                    
-                output_data = sanitize(output_data)
-                    
-                content_text = ""
-                if event.content and event.content.parts:
-                    content_text = event.content.parts[0].text
-                    
-                payload = {
-                    "type": "event",
-                    "content": content_text,
-                    "output": output_data,
-                    "route": getattr(event, "route", None),
-                    "state": getattr(event, "state", None)
-                }
-                yield json.dumps(payload) + "\n"
+            try:
+                async for event in runner.run_async(
+                    user_id="local_ui",
+                    session_id=session.id,
+                    new_message=msg,
+                ):
+                    output_data = event.output
+                    if hasattr(output_data, "model_dump"):
+                        output_data = output_data.model_dump()
+                        
+                    def sanitize(obj):
+                        if isinstance(obj, bytes):
+                            return "<bytes>"
+                        if isinstance(obj, dict):
+                            return {k: sanitize(v) for k, v in obj.items()}
+                        if isinstance(obj, list):
+                            return [sanitize(i) for i in obj]
+                        return obj
+                        
+                    output_data = sanitize(output_data)
+                        
+                    content_text = ""
+                    if event.content and event.content.parts:
+                        content_text = event.content.parts[0].text
+                        
+                    payload = {
+                        "type": "event",
+                        "content": content_text,
+                        "output": output_data,
+                        "route": getattr(event, "route", None),
+                        "state": getattr(event, "state", None)
+                    }
+                    yield json.dumps(payload) + "\n"
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    yield json.dumps({
+                        "type": "event",
+                        "route": "error",
+                        "content": "Gemini API Rate Limit Exceeded (15 Requests Per Minute on Free Tier). Please wait 60 seconds."
+                    }) + "\n"
+                else:
+                    yield json.dumps({
+                        "type": "event",
+                        "route": "error",
+                        "content": f"Graph execution failed: {error_str}"
+                    }) + "\n"
             
         finally:
             if lock_acquired:
