@@ -32,8 +32,9 @@ def query_historical_database(query_text: str) -> dict:
 import urllib.request
 import urllib.parse
 import re
+import asyncio
 
-def search_online_archives(query_text: str) -> dict:
+async def search_online_archives(query_text: str) -> dict:
     """Searches the public web for historical stamp information using DuckDuckGo.
     
     Args:
@@ -42,7 +43,7 @@ def search_online_archives(query_text: str) -> dict:
     Returns:
         A dictionary containing the top historical search result snippets.
     """
-    try:
+    def _run_search():
         url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query_text)
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -60,5 +61,9 @@ def search_online_archives(query_text: str) -> dict:
             results.append({"snippet": clean_s})
             
         return {"result": "Web search successful", "snippets": results}
+
+    try:
+        # Offload the blocking HTTP request to a background thread to prevent starving the FastAPI event loop
+        return await asyncio.to_thread(_run_search)
     except Exception as e:
         return {"error": f"Web search failed: {e}"}
