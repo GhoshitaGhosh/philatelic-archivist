@@ -7,8 +7,9 @@ from google.adk.apps import App
 from google.adk.agents import LlmAgent
 from google.adk.agents.context import Context
 
-from .tools import query_historical_database, search_online_archives
+from .tools import query_historical_database
 from .guardrails import input_guardrail_node, secure_rejection_output
+from google.adk.tools.google_search_tool import GoogleSearchTool
 
 class PhilatelicSchema(BaseModel):
     denomination: Optional[str] = Field(None, description="Stamp denomination")
@@ -41,9 +42,9 @@ chronological_context_node = LlmAgent(
     model="gemini-3.1-flash-lite",
     instruction="""You are the Chronological Context Node. You have full visual access to the original artifact image alongside the OCR extracted tokens.
     Use your multimodal vision capabilities to identify the stamp visually. Use the query_historical_database tool to link the extracted dates/locations/visuals to historical milestones. 
-    If the local database query yields no exact matches, or if ANY critical piece of historical data is missing (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
+    If the local database query yields no exact matches, or if ANY critical piece of historical data is missing (e.g., issue year, series name, historical significance, or location), use your native google_search tool to execute a multimodal reverse-image search and fill in the missing gaps directly from Google's Knowledge Graph.
     Summarize the milestone context and historical significance. CRITICAL: Your summary MUST explicitly list the exact Issue Year and Date if discovered, the exact series name, and precise historical facts. Do not summarize dates away into vague eras.""",
-    tools=[query_historical_database, search_online_archives],
+    tools=[query_historical_database, GoogleSearchTool(bypass_multi_tools_limit=True)],
     output_schema=ContextOutput,
     output_key="milestone_results"
 )
