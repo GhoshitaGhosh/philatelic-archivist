@@ -34,6 +34,20 @@
       "launch_date": "1852-07-01",
       "primary_locations": ["Sind Province", "Karachi"],
       "historical_significance": "Asia's first postage stamps, issued strictly as a regional exhibition of postal efficiency in the Sind province before national stamps existed."
+    },
+    {
+      "issue_year": 1955,
+      "series": "Malaria Control",
+      "launch_date": "1955-04-16",
+      "primary_locations": ["New Delhi", "Bombay GPO"],
+      "historical_significance": "Issued to highlight the National Malaria Control Programme. Denomination is 6 Annas. Features a mosquito, a caduceus, and a factory landscape, symbolizing medical science and industrial progress against the disease."
+    },
+    {
+      "issue_year": 1962,
+      "series": "World United Against Malaria",
+      "launch_date": "1962-04-07",
+      "primary_locations": ["New Delhi"],
+      "historical_significance": "Issued in support of the World Health Organization's global campaign. Issued in the decimal Naye Paise currency system, distinct from the earlier 1955 Anna-based issue."
     }
   ]
 }
