@@ -73,6 +73,9 @@ To allow for safe public deployments (e.g., on Hugging Face Spaces) without leak
 ### 5. Token-Efficient Web Search Fallback
 Rather than deploying a costly, high-latency "Browsing Agent Swarm" to handle stamps with missing physical issue years, we integrated a custom, dependency-free pure-Python DuckDuckGo HTML scraper directly into the context node. Unlike fragile third-party search libraries that rely on C-extensions and frequently segfault inside minimal Docker containers, our custom scraper executes lightning-fast, highly stable internet scrapes to fill in historical gaps without drastically inflating LLM token quotas or risking server crashes.
 
+### 6. Resilient NDJSON Error Streaming
+In multi-agent sequential architectures, rate limits (like the Gemini 15 Requests Per Minute Free Tier quota) are easily triggered, typically resulting in fatal ASGI server crashes (`429 RESOURCE_EXHAUSTED`). We engineered a secure `try/except` wrapper around the ADK `InMemoryRunner` event loop that gracefully intercepts all underlying SDK and quota exceptions, serializing them into robust NDJSON error chunks. This ensures the frontend elegantly renders clear, actionable error messages directly into the UI stream without ever dropping the connection.
+
 ---
 
 ## 🚀 Step-by-Step Reproduction
