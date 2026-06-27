@@ -101,11 +101,12 @@ async def archive_endpoint(request: Request):
                     session_id=session.id,
                     new_message=msg,
                 ):
-                    output_data = event.output
-                    if hasattr(output_data, "model_dump"):
-                        output_data = output_data.model_dump()
-                        
                     def sanitize(obj):
+                        if hasattr(obj, "model_dump"):
+                            try:
+                                obj = obj.model_dump()
+                            except Exception:
+                                pass
                         if isinstance(obj, bytes):
                             return "<bytes>"
                         if isinstance(obj, dict):
@@ -114,8 +115,6 @@ async def archive_endpoint(request: Request):
                             return [sanitize(i) for i in obj]
                         return obj
                         
-                    output_data = sanitize(output_data)
-                        
                     content_text = ""
                     if event.content and event.content.parts:
                         content_text = event.content.parts[0].text
@@ -123,10 +122,11 @@ async def archive_endpoint(request: Request):
                     payload = {
                         "type": "event",
                         "content": content_text,
-                        "output": output_data,
+                        "output": getattr(event, "output", None),
                         "route": getattr(event, "route", None),
                         "state": getattr(event, "state", None)
                     }
+                    payload = sanitize(payload)
                     yield json.dumps(payload) + "\n"
             except Exception as e:
                 error_str = str(e)

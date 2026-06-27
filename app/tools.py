@@ -1,6 +1,8 @@
 import json
 import os
 
+_db_cache = None
+
 def query_historical_database(query_text: str) -> dict:
     """Queries the local historical registry database for a given era, date, or location.
     
@@ -10,12 +12,16 @@ def query_historical_database(query_text: str) -> dict:
     Returns:
         A dictionary containing matching milestone issues.
     """
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'historical_registry.json')
-    try:
-        with open(db_path, 'r') as f:
-            db = json.load(f)
-    except Exception as e:
-        return {"error": f"Could not load database: {e}"}
+    global _db_cache
+    if _db_cache is None:
+        db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'historical_registry.json')
+        try:
+            with open(db_path, 'r') as f:
+                _db_cache = json.load(f)
+        except Exception as e:
+            return {"error": f"Could not load database: {e}"}
+            
+    db = _db_cache
         
     results = []
     for issue in db.get("milestone_issues", []):
