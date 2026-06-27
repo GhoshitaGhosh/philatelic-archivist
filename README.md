@@ -71,7 +71,7 @@ To allow for safe public deployments (e.g., on Hugging Face Spaces) without leak
 **Secure Execution Isolation:** The visitor's key is passed exclusively via a custom HTTP header (`X-Gemini-Key`). The FastAPI backend employs a strict `asyncio.Lock()` to prevent cross-contamination between concurrent users, temporarily injecting the key into the local process and forcefully wiping it via an ironclad `finally` block the precise microsecond the graph execution concludes.
 
 ### 5. Token-Efficient Web Search Fallback
-Rather than deploying a costly, high-latency "Browsing Agent Swarm" to handle stamps with missing physical issue years, we integrated a headless `duckduckgo-search` tool directly into the context node. If the local deterministic database fails and the physical artifact is missing critical chronological data, the node dynamically executes a lightning-fast internet scrape to fill in the historical gaps without drastically inflating LLM token quotas.
+Rather than deploying a costly, high-latency "Browsing Agent Swarm" to handle stamps with missing physical issue years, we integrated a custom, dependency-free pure-Python DuckDuckGo HTML scraper directly into the context node. Unlike fragile third-party search libraries that rely on C-extensions and frequently segfault inside minimal Docker containers, our custom scraper executes lightning-fast, highly stable internet scrapes to fill in historical gaps without drastically inflating LLM token quotas or risking server crashes.
 
 ---
 
