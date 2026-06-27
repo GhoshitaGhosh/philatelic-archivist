@@ -73,8 +73,14 @@ To allow for safe public deployments (e.g., on Hugging Face Spaces) without leak
 ### 5. Token-Efficient Web Search Fallback
 Rather than deploying a costly, high-latency "Browsing Agent Swarm" to handle stamps with missing physical issue years, we integrated a custom, dependency-free pure-Python DuckDuckGo HTML scraper directly into the context node. Unlike fragile third-party search libraries that rely on C-extensions and frequently segfault inside minimal Docker containers, our custom scraper executes lightning-fast, highly stable internet scrapes to fill in historical gaps without drastically inflating LLM token quotas or risking server crashes.
 
-### 6. Resilient NDJSON Error Streaming
-In multi-agent sequential architectures, rate limits (like the Gemini 15 Requests Per Minute Free Tier quota) are easily triggered, typically resulting in fatal ASGI server crashes (`429 RESOURCE_EXHAUSTED`). We engineered a secure `try/except` wrapper around the ADK `InMemoryRunner` event loop that gracefully intercepts all underlying SDK and quota exceptions, serializing them into robust NDJSON error chunks. This ensures the frontend elegantly renders clear, actionable error messages directly into the UI stream without ever dropping the connection.
+### 6. Resilient NDJSON Error Streaming & Serialization
+In multi-agent sequential architectures, rate limits (like the Gemini 15 Requests Per Minute Free Tier quota) are easily triggered, typically resulting in fatal ASGI server crashes (`429 RESOURCE_EXHAUSTED`). We engineered a secure `try/except` wrapper around the ADK `InMemoryRunner` event loop that gracefully intercepts all underlying SDK and quota exceptions, serializing them into robust NDJSON error chunks. Furthermore, the streaming payload is deeply sanitized via a recursive function to explicitly strip un-serializable ADK context state (such as raw Pydantic multimodal image bytes), entirely preventing `TypeError` JSON crashes. This ensures the frontend elegantly renders clear, actionable error messages directly into the UI stream without ever dropping the connection.
+
+### 7. Multimodal Context Restoration
+Sequential ADK LLMAgents typically suffer from the "telephone game" flaw: downstream nodes only receive the text schema output of upstream nodes, completely losing visual access to the original multimodal image. We resolved this by configuring the initial Input Guardrail to securely cache the original binary payload in the global ADK memory (`ctx.state`). A dedicated `prepare_context_node` subsequently retrieves this image payload and stitches it to the OCR text, restoring full multimodal vision for the Chronological Context Node.
+
+### 8. Zero-Blocking In-Memory DB Cache
+To prevent even micro-second event loop stalling inside the ASGI server, the local `historical_registry.json` database is cached directly into Python server RAM upon the first execution. This ensures all deterministic milestone queries operate at purely CPU-bound speeds with zero blocking disk I/O.
 
 ---
 
