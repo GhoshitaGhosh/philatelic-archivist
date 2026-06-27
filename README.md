@@ -40,6 +40,8 @@ graph TD
     C --> D[Chronological Context Node]
     D -- Executes Tool: query_historical_database --> E[Local JSON Database]
     E -. Returns Milestone Data .-> D
+    D -- Missing Data Fallback: search_online_archives --> DDG[DuckDuckGo Web Search]
+    DDG -. Returns Web Snippets .-> D
     D --> F[Archival Synthesis Node]
     F --> G[Structured Philatelic Schema & Historical Story Map]
 ```
@@ -67,6 +69,9 @@ Unlike typical text-only chatbots, this project leverages Gemini's native multim
 ### 4. Bring Your Own Key (BYOK) Architecture for Public Deployments
 To allow for safe public deployments (e.g., on Hugging Face Spaces) without leaking developer API quotas, the frontend features a dynamic configuration probe. If the backend is running without a local `.env` file, the UI dynamically surfaces a secure `<input type="password">` field for visitors to supply their own Gemini API key. 
 **Secure Execution Isolation:** The visitor's key is passed exclusively via a custom HTTP header (`X-Gemini-Key`). The FastAPI backend employs a strict `asyncio.Lock()` to prevent cross-contamination between concurrent users, temporarily injecting the key into the local process and forcefully wiping it via an ironclad `finally` block the precise microsecond the graph execution concludes.
+
+### 5. Token-Efficient Web Search Fallback
+Rather than deploying a costly, high-latency "Browsing Agent Swarm" to handle stamps with missing physical issue years, we integrated a headless `duckduckgo-search` tool directly into the context node. If the local deterministic database fails and the physical artifact is missing critical chronological data, the node dynamically executes a lightning-fast internet scrape to fill in the historical gaps without drastically inflating LLM token quotas.
 
 ---
 
