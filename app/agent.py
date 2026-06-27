@@ -42,7 +42,7 @@ chronological_context_node = LlmAgent(
     instruction="""You are the Chronological Context Node. You will receive OCR extracted tokens.
     Use the query_historical_database tool to link the extracted dates/locations to historical milestones. 
     If the local database query yields no exact matches, or if ANY critical piece of historical data is missing from the OCR extraction (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
-    Summarize the milestone context and historical significance.""",
+    Summarize the milestone context and historical significance. CRITICAL: Your summary MUST explicitly list the exact Issue Year and Date if discovered, the exact series name, and precise historical facts. Do not summarize dates away into vague eras.""",
     tools=[query_historical_database, search_online_archives],
     output_schema=ContextOutput,
     output_key="milestone_results"
@@ -77,7 +77,8 @@ archival_synthesis_node = LlmAgent(
     model="gemini-3.1-flash-lite",
     instruction="""You are the Archival Synthesis Node. Combine the visual/OCR extraction data, the chronological context, 
     and any heritage flags to produce a comprehensive final catalog. 
-    You must output a structured Philatelic Schema AND an engaging narrative 'Historical Story Map'.""",
+    You must output a structured Philatelic Schema AND an engaging narrative 'Historical Story Map'.
+    CRITICAL: The Historical Story Map must explicitly state exact issue dates, exact years, series names, and precise historical facts retrieved from the context. Do NOT be vague or generic. Do not use phrases like 'mid-20th-century' when you know the exact year (e.g. 1955).""",
     output_schema=FinalOutput
 )
 
