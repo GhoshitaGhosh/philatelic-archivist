@@ -39,14 +39,32 @@ visual_ocr_node = LlmAgent(
 chronological_context_node = LlmAgent(
     name="chronological_context_node",
     model="gemini-3.1-flash-lite",
-    instruction="""You are the Chronological Context Node. You will receive OCR extracted tokens.
-    Use the query_historical_database tool to link the extracted dates/locations to historical milestones. 
-    If the local database query yields no exact matches, or if ANY critical piece of historical data is missing from the OCR extraction (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
+    instruction="""You are the Chronological Context Node. You have full visual access to the original artifact image alongside the OCR extracted tokens.
+    Use your multimodal vision capabilities to identify the stamp visually. Use the query_historical_database tool to link the extracted dates/locations/visuals to historical milestones. 
+    If the local database query yields no exact matches, or if ANY critical piece of historical data is missing (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
     Summarize the milestone context and historical significance. CRITICAL: Your summary MUST explicitly list the exact Issue Year and Date if discovered, the exact series name, and precise historical facts. Do not summarize dates away into vague eras.""",
     tools=[query_historical_database, search_online_archives],
     output_schema=ContextOutput,
     output_key="milestone_results"
 )
+
+from google.genai import types
+
+@node
+def prepare_context_node(ctx: Context, node_input: OCROutput) -> types.Content:
+    """Restores multimodal vision to the Chronological Context Node by combining the image with OCR results."""
+    original_payload = ctx.state.get("original_payload")
+    parts = []
+    
+    if original_payload:
+        if isinstance(original_payload, types.Content):
+            parts.extend(original_payload.parts)
+        else:
+            parts.append(types.Part.from_text(text=str(original_payload)))
+            
+    parts.append(types.Part.from_text(text=f"OCR Extraction Results: {node_input.extracted_tokens}"))
+    
+    return types.Content(role="user", parts=parts)
 
 @node
 def prepare_synthesis(ctx: Context, node_input: dict) -> str:
@@ -90,7 +108,8 @@ root_agent = Workflow(
             "flagged": secure_rejection_output,
             "passed": visual_ocr_node
         }),
-        (visual_ocr_node, chronological_context_node),
+        (visual_ocr_node, prepare_context_node),
+        (prepare_context_node, chronological_context_node),
         (chronological_context_node, prepare_synthesis),
         (prepare_synthesis, archival_synthesis_node),
     ]

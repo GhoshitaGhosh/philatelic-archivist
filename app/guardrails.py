@@ -37,7 +37,10 @@ def input_guardrail_node(node_input) -> Event:
     return Event(
         output=node_input,
         route="passed",
-        state={"heritage_flag": heritage_flag}
+        state={
+            "heritage_flag": heritage_flag,
+            "original_payload": node_input
+        }
     )
 
 def secure_rejection_output(node_input: str) -> Event:
