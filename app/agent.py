@@ -7,7 +7,7 @@ from google.adk.apps import App
 from google.adk.agents import LlmAgent
 from google.adk.agents.context import Context
 
-from .tools import query_historical_database
+from .tools import query_historical_database, search_online_archives
 from .guardrails import input_guardrail_node, secure_rejection_output
 
 class PhilatelicSchema(BaseModel):
@@ -41,8 +41,9 @@ chronological_context_node = LlmAgent(
     model="gemini-3.1-flash-lite",
     instruction="""You are the Chronological Context Node. You will receive OCR extracted tokens.
     Use the query_historical_database tool to link the extracted dates/locations to historical milestones. 
+    If the local database query yields no exact matches, or if ANY critical piece of historical data is missing from the OCR extraction (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
     Summarize the milestone context and historical significance.""",
-    tools=[query_historical_database],
+    tools=[query_historical_database, search_online_archives],
     output_schema=ContextOutput,
     output_key="milestone_results"
 )
