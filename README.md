@@ -52,35 +52,43 @@ Throughout the development of this capstone project, several complex engineering
 
 ### 1. Handling NDJSON Stream Fragmentation
 When streaming real-time thought processes from the ADK backend to the frontend, large JSON objects were occasionally chunked mid-stream by FastAPI, leading to fragmented `JSON.parse()` errors on the client side. 
-**Solution:** We engineered a robust chunk buffering system in `frontend/index.html` that concatenates incoming byte streams and safely extracts completely formed NDJSON boundaries before attempting to parse, guaranteeing flawless live-rendering of the Agent's internal cognition.
+
+> **The Engineering Solution:** We engineered a robust chunk buffering system in `frontend/index.html` that concatenates incoming byte streams and safely extracts completely formed NDJSON boundaries before attempting to parse, guaranteeing flawless live-rendering of the Agent's internal cognition.
 
 ### 2. Defensive Token & Quota Management
 Evaluating complex multi-agent graphs locally can rapidly drain the Gemini Free Tier burst rate limits (RPM), resulting in persistent `429 RESOURCE_EXHAUSTED` errors during automated `agents-cli eval` executions.
-**Solution:** 
-- We developed a custom evaluation runner (`tests/eval/run_local_eval.py`) that strictly bypasses GCP ADC assumptions and injects deterministic sleep-delays between test cases to allow burst-quota buckets to refill. 
-- We dynamically downgraded internal graph nodes from standard experimental endpoints to high-quota lite variants (e.g., `gemini-3.1-flash-lite`) to guarantee maximum uptime across extensive evaluation suites.
+
+> **The Engineering Solution:** We developed a custom evaluation runner (`tests/eval/run_local_eval.py`) that strictly bypasses GCP ADC assumptions and injects deterministic sleep-delays between test cases to allow burst-quota buckets to refill. We dynamically downgraded internal graph nodes from standard experimental endpoints to high-quota lite variants (e.g., `gemini-3.1-flash-lite`) to guarantee maximum uptime across extensive evaluation suites.
 
 ### 3. Native Multimodal Vision & Streaming Integrity
 Unlike typical text-only chatbots, this project leverages Gemini's native multimodality to process raw image data. The frontend UI seamlessly encodes user-uploaded artifacts (like vintage stamps) into Base64 streams, routing them securely through FastAPI into the ADK graph. The `visual_ocr_node` physically "sees" the artifact to extract faint cachet watermarks and postmark dates without relying on external OCR libraries. 
 
-* **Live Model Swapping:** A dynamic frontend selector allows users to instantly pivot between models (e.g., `gemini-3.1-flash-lite`, `gemini-3.5-flash`) at runtime. The FastAPI backend hot-swaps the underlying LLM agents across the entire ADK graph before executing the request.
-* **Streaming Integrity Defense:** To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization. This prevents `TypeError` serialization crashes while still allowing the LLM to process the images natively.
+> **The Engineering Solution:** A dynamic frontend selector allows users to instantly pivot between models (e.g., `gemini-3.1-flash-lite`, `gemini-3.5-flash`) at runtime. The FastAPI backend hot-swaps the underlying LLM agents across the entire ADK graph before executing the request. To maintain the integrity of the NDJSON live stream, the backend automatically intercepts and strips raw binary image buffers from the ADK diagnostic event stream before JSON serialization. This prevents `TypeError` serialization crashes while still allowing the LLM to process the images natively.
 
 ### 4. Bring Your Own Key (BYOK) Architecture for Public Deployments
 To allow for safe public deployments (e.g., on Hugging Face Spaces) without leaking developer API quotas, the frontend features a dynamic configuration probe. If the backend is running without a local `.env` file, the UI dynamically surfaces a secure `<input type="password">` field for visitors to supply their own Gemini API key. 
-**Secure Execution Isolation:** The visitor's key is passed exclusively via a custom HTTP header (`X-Gemini-Key`). The FastAPI backend employs a strict `asyncio.Lock()` to prevent cross-contamination between concurrent users, temporarily injecting the key into the local process and forcefully wiping it via an ironclad `finally` block the precise microsecond the graph execution concludes.
+
+> **The Engineering Solution:** The visitor's key is passed exclusively via a custom HTTP header (`X-Gemini-Key`). The FastAPI backend employs a strict `asyncio.Lock()` to prevent cross-contamination between concurrent users, temporarily injecting the key into the local process and forcefully wiping it via an ironclad `finally` block the precise microsecond the graph execution concludes.
 
 ### 5. Iterative Parallel Web Scraper Orchestration
-Because Native Google Search Grounding limits strict free-tier API keys to 0 requests without a billing account, we architected a resilient, 100% free fallback. Rather than deploying a costly "Browsing Agent Swarm" or a generic single-query scraper, we engineered a pure-Python, dependency-free Wikipedia API parallel scraper (`search_online_archives`). DuckDuckGo's HTML endpoints aggressively block automated traffic with Captchas, so we shifted to Wikipedia's natively open Action API. To prevent "masking" (where a popular historical event shadows an obscure stamp), the LLM context node generates an array of highly-specific search variations. The backend dispatches these Wikipedia searches concurrently via `asyncio.gather()` and cross-references the rich historical paragraph extracts in a single LLM pass, ensuring flawless disambiguation without inflating token quotas.
+Because Native Google Search Grounding limits strict free-tier API keys to 0 requests without a billing account, relying on standard search plugins causes the pipeline to instantly fail in production for free-tier users.
+
+> **The Engineering Solution:** We architected a resilient, 100% free fallback. Rather than deploying a costly "Browsing Agent Swarm" or a generic single-query scraper, we engineered a pure-Python, dependency-free Wikipedia API parallel scraper (`search_online_archives`). DuckDuckGo's HTML endpoints aggressively block automated traffic with Captchas, so we shifted to Wikipedia's natively open Action API. To prevent "masking" (where a popular historical event shadows an obscure stamp), the LLM context node generates an array of highly-specific search variations. The backend dispatches these Wikipedia searches concurrently via `asyncio.gather()` and cross-references the rich historical paragraph extracts in a single LLM pass, ensuring flawless disambiguation without inflating token quotas.
 
 ### 6. Resilient NDJSON Error Streaming & Serialization
-In multi-agent sequential architectures, rate limits (like the Gemini 15 Requests Per Minute Free Tier quota) are easily triggered, typically resulting in fatal ASGI server crashes (`429 RESOURCE_EXHAUSTED`). We engineered a secure `try/except` wrapper around the ADK `InMemoryRunner` event loop that gracefully intercepts all underlying SDK and quota exceptions, serializing them into robust NDJSON error chunks. Furthermore, the streaming payload is deeply sanitized via a recursive function to explicitly strip un-serializable ADK context state (such as raw Pydantic multimodal image bytes), entirely preventing `TypeError` JSON crashes. This ensures the frontend elegantly renders clear, actionable error messages directly into the UI stream without ever dropping the connection.
+In multi-agent sequential architectures, rate limits (like the Gemini 15 Requests Per Minute Free Tier quota) are easily triggered, typically resulting in fatal ASGI server crashes (`429 RESOURCE_EXHAUSTED`). 
+
+> **The Engineering Solution:** We engineered a secure `try/except` wrapper around the ADK `InMemoryRunner` event loop that gracefully intercepts all underlying SDK and quota exceptions, serializing them into robust NDJSON error chunks. Furthermore, the streaming payload is deeply sanitized via a recursive function to explicitly strip un-serializable ADK context state (such as raw Pydantic multimodal image bytes), entirely preventing `TypeError` JSON crashes. This ensures the frontend elegantly renders clear, actionable error messages directly into the UI stream without ever dropping the connection.
 
 ### 7. Multimodal Context Restoration
-Sequential ADK LLMAgents typically suffer from the "telephone game" flaw: downstream nodes only receive the text schema output of upstream nodes, completely losing visual access to the original multimodal image. We resolved this by configuring the initial Input Guardrail to securely cache the original binary payload in the global ADK memory (`ctx.state`). A dedicated `prepare_context_node` subsequently retrieves this image payload and stitches it to the OCR text, restoring full multimodal vision for the Chronological Context Node.
+Sequential ADK LLMAgents typically suffer from the "telephone game" flaw: downstream nodes only receive the text schema output of upstream nodes, completely losing visual access to the original multimodal image. 
+
+> **The Engineering Solution:** We resolved this by configuring the initial Input Guardrail to securely cache the original binary payload in the global ADK memory (`ctx.state`). A dedicated `prepare_context_node` subsequently retrieves this image payload and stitches it to the OCR text, restoring full multimodal vision for the Chronological Context Node.
 
 ### 8. Zero-Blocking In-Memory DB Cache
-To prevent even micro-second event loop stalling inside the ASGI server, the local `historical_registry.json` database is cached directly into Python server RAM upon the first execution. This ensures all deterministic milestone queries operate at purely CPU-bound speeds with zero blocking disk I/O.
+Disk-bound file reads during heavy asynchronous graph execution can introduce micro-stutters and event loop stalling inside the ASGI server, delaying the agent's real-time streaming cadence.
+
+> **The Engineering Solution:** To prevent even micro-second event loop stalling inside the ASGI server, the local `historical_registry.json` database is cached directly into Python server RAM upon the first execution. This ensures all deterministic milestone queries operate at purely CPU-bound speeds with zero blocking disk I/O.
 
 ---
 
