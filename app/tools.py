@@ -37,11 +37,12 @@ def query_historical_database(query_text: str) -> dict:
 
 import urllib.request
 import urllib.parse
-import re
+import json
 import asyncio
+import re
 
 async def search_online_archives(query_texts: list[str]) -> dict:
-    """Searches the public web for historical stamp information using parallel DuckDuckGo scraping.
+    """Searches the public web for historical stamp information using parallel Wikipedia API searches.
     
     Args:
         query_texts: An array of distinct search queries (e.g., ['1950 Republic of India stamp', 'India Republic stamp 1950 denomination']).
@@ -50,26 +51,29 @@ async def search_online_archives(query_texts: list[str]) -> dict:
         A dictionary containing aggregated historical search result snippets across all queries.
     """
     def _run_single_search(query_text: str):
-        url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query_text)
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + urllib.parse.quote(query_text) + "&utf8=&format=json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'PhilatelicArchivist/1.0'})
         try:
             with urllib.request.urlopen(req, timeout=10) as response:
-                html = response.read().decode('utf-8')
+                data = json.loads(response.read().decode('utf-8'))
                 
-            snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', html, re.IGNORECASE | re.DOTALL)
             results = []
-            for s in snippets[:3]:
-                clean_s = re.sub(r'<[^>]+>', '', s).strip()
-                clean_s = clean_s.replace('&#39;', "'").replace('&quot;', '"').replace('&amp;', '&')
+            for item in data.get('query', {}).get('search', [])[:3]:
+                # Clean HTML tags from Wikipedia snippets
+                clean_s = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
+                clean_s = clean_s.replace('&quot;', '"').replace('&amp;', '&').replace('&#039;', "'")
                 results.append(clean_s)
             return {"query": query_text, "snippets": results}
         except Exception as e:
             return {"query": query_text, "error": str(e)}
 
     try:
+        if isinstance(query_texts, str):
+            query_texts = [query_texts]
+            
         # Offload blocking HTTP requests to a background thread pool and execute in parallel
         tasks = [asyncio.to_thread(_run_single_search, query) for query in query_texts]
         results = await asyncio.gather(*tasks)
-        return {"result": "Parallel web search successful", "data": results}
+        return {"result": "Parallel Wikipedia search successful", "data": results}
     except Exception as e:
-        return {"error": f"Parallel web search failed: {e}"}
+        return {"error": f"Parallel Wikipedia search failed: {e}"}
