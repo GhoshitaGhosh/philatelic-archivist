@@ -51,19 +51,21 @@ async def search_online_archives(query_texts: list[str]) -> dict:
         A dictionary containing aggregated historical search result snippets across all queries.
     """
     def _run_single_search(query_text: str):
-        url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + urllib.parse.quote(query_text) + "&utf8=&format=json"
+        # Use generator=search with prop=extracts to fetch rich, full introductory paragraphs instead of truncated HTML snippets
+        url = "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=" + urllib.parse.quote(query_text) + "&prop=extracts&exsentences=5&exintro=1&explaintext=1&utf8=&format=json"
         req = urllib.request.Request(url, headers={'User-Agent': 'PhilatelicArchivist/1.0'})
         try:
             with urllib.request.urlopen(req, timeout=10) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 
             results = []
-            for item in data.get('query', {}).get('search', [])[:3]:
-                # Clean HTML tags from Wikipedia snippets
-                clean_s = re.sub(r'<[^>]+>', '', item.get('snippet', '')).strip()
-                clean_s = clean_s.replace('&quot;', '"').replace('&amp;', '&').replace('&#039;', "'")
-                results.append(clean_s)
-            return {"query": query_text, "snippets": results}
+            pages = data.get('query', {}).get('pages', {})
+            for page_id, page_data in list(pages.items())[:3]:
+                # Extract full plain-text sentences which are highly likely to contain exact historical dates
+                extract = page_data.get('extract', '').strip()
+                if extract:
+                    results.append(extract)
+            return {"query": query_text, "rich_extracts": results}
         except Exception as e:
             return {"query": query_text, "error": str(e)}
 
