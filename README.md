@@ -40,8 +40,8 @@ graph TD
     C --> D[Chronological Context Node]
     D -- Executes Tool: query_historical_database --> E[Local JSON Database]
     E -. Returns Milestone Data .-> D
-    D -- Missing Data Fallback: search_online_archives --> DDG[DuckDuckGo Web Search]
-    DDG -. Returns Web Snippets .-> D
+    D -- Missing Data Fallback: search_online_archives --> WIKI((Wikipedia Action API))
+    WIKI -. Returns Rich Extracts .-> D
     D --> F[Archival Synthesis Node]
     F --> G[Structured Philatelic Schema & Historical Story Map]
 ```
