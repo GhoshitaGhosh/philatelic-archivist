@@ -134,7 +134,7 @@ async def archive_endpoint(request: Request):
                     yield json.dumps({
                         "type": "event",
                         "route": "error",
-                        "content": "Gemini API Rate Limit Exceeded (15 Requests Per Minute on Free Tier). Please wait 60 seconds."
+                        "content": f"Gemini API Quota Exceeded: {error_str}"
                     }) + "\n"
                 else:
                     yield json.dumps({
