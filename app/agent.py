@@ -42,7 +42,8 @@ chronological_context_node = LlmAgent(
     instruction="""You are the Chronological Context Node. You have full visual access to the original artifact image alongside the OCR extracted tokens.
     Use your multimodal vision capabilities to identify the stamp visually. Use the query_historical_database tool to link the extracted dates/locations/visuals to historical milestones. 
     If the local database query yields no exact matches, or if ANY critical piece of historical data is missing (e.g., issue year, series name, historical significance, or location), use the search_online_archives tool to search the web and fill in the missing gaps.
-    Because web search results can be heavily masked by popular events (like the 1962 WHO Malaria campaign masking a 1955 domestic stamp), you MUST generate at least 3 distinct, highly-specific search variations in an array to cross-reference results and isolate the correct physical artifact.
+    Because web search results can be heavily masked by popular events, you MUST generate at least 3 distinct, highly-specific search variations in an array to cross-reference results and isolate the correct physical artifact.
+    CRITICAL ANTI-LOOPING MEASURE: You must call the search_online_archives tool EXACTLY ONCE. Do not call it repeatedly. If your first array of parallel searches does not return the exact dates, simply state 'Exact date unknown' and generate your summary using the available data.
     Summarize the milestone context and historical significance. CRITICAL: Your summary MUST explicitly list the exact Issue Year and Date if discovered, the exact series name, and precise historical facts. Do not summarize dates away into vague eras.""",
     tools=[query_historical_database, search_online_archives],
     output_schema=ContextOutput,
